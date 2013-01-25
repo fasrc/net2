@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+set -e
+
+
+#---require pacman
+
+if ! which pacman >/dev/null 2>&1; then
+	echo "*** ERROR ***  pacman not found (use getpacman to install it before running this script (source the setup.sh, too))" >&2
+	exit 1
+fi
+
+
+#---make the directory
+
+installdir=ATLAS-Client.$(date +%Y%m%d)
+if [ -d "$installdir" ]; then
+	echo "*** ERROR *** directory [$installdir] already exists" >&2
+	exit 1
+fi
+mkdir "$installdir"
+cd "$_"
+
+
+#---base installation
+
+#regular users only need these
+export VDTSETUP_AGREE_TO_LICENSES=y
+export VDTSETUP_INSTALL_CERTS=l
+
+#root also needs these (do they interfere when set for a regular user? I once thought so)
+if [ "$(id -u)" -eq 0 ]; then
+	export VDTSETUP_ENABLE_ROTATE=y
+	export VDTSETUP_CA_CERT_UPDATER=y
+	export VDTSETUP_EDG_CRL_UPDATE=y
+	export VDTSETUP_ENABLE_CONDOR=n
+fi
+
+#handle 64-bit OS (see http://www.usatlas.bnl.gov/twiki/bin/view/Admins/WlcgClient#Install_on_64bit_OS_Full_32bit_i)
+#(around 2011-07-29 I commented this out, but have used it fine since)
+if [ "$(getconf LONG_BIT)" -eq 64 ]; then
+	echo "This is a 64-bit OS, so setting VDT_PRETEND_32=1."
+	export VDT_PRETEND_32=1
+fi
+
+pacman -allow trust-all-caches -allow tar-overwrite -get http://www.mwt2.org/caches:ATLAS-Client
+mkdir -p post-setup
+echo 'export DQ2_LOCAL_SITE_ID=ROAMING' >> post-setup/DQ2_LOCAL_SITE_ID.sh
+echo 'setenv DQ2_LOCAL_SITE_ID ROAMING' >> post-setup/DQ2_LOCAL_SITE_ID.csh
+set +u; source ./setup.sh; set -u
+
+##was using this sometime around 2011-07-29
+#pacman -allow trust-all-caches -allow tar-overwrite -get http://vdt.cs.wisc.edu/vdt_200_cache:VDT-Common
+#pacman -allow trust-all-caches -allow tar-overwrite -get "http://www.mwt2.org/caches:wlcg-client | version('1.7rc6')"
+#pacman -allow trust-all-caches -allow tar-overwrite -get http://atlas.web.cern.ch/Atlas/GROUPS/DATABASE/project/ddm/releases/pacman/cache:DQ2Clients
+
+
+#---CAs
+
+##the old 1.10.1 way
+###the following check does not work because the installation path is hardcoded in the file
+##if ! echo "9d4780ccf2c5f8780070ba86047fe2c7  $VDT_LOCATION/vdt/etc/vdt-update-certs.conf" | md5sum -c > /dev/null; then
+##	echo "WARNING: it appears that the default $VDT_LOCATION/vdt/etc/vdt-update-certs.conf has been changed; this script might have to be updated in order to handle it" >&2
+##	sleep 5
+##fi
+#sed -i -e 's?^#cacerts_url = http://vdt.cs.wisc.edu?cacerts_url = http://vdt.cs.wisc.edu?' "$VDT_LOCATION"/vdt/etc/vdt-update-certs.conf
+#set +u; source "$VDT_LOCATION"/vdt-questions.sh; set -u
+#"$VDT_LOCATION"/vdt/sbin/vdt-setup-ca-certificates
+
+#the 2.0.0 way
+set +u; source ./setup.sh; set -u
+vdt-ca-manage setupca --url osg --location local
+
+
+#---32-bit python, if necessary (the MySQLdb in ATLAS-Client is 32-bit)
+
+#if [ "$(getconf LONG_BIT)" -eq 64 ]; then
+#	echo "This is a 64-bit OS, so installing Python32bit."
+#	pacman -allow trust-all-caches -get http://www.mwt2.org/caches:Python32bit
+#fi
+
+
+#---cd back up and make a symlink
+
+cd ..
+
+if [ -h ATLAS-Client ]; then
+	echo "WARNING: ATLAS-Client is already a symbolic link, pointing to [$(readlink ATLAS-Client)]; changing to [$installdir]" >&2
+	rm -f ATLAS-Client
+fi
+ln -s "$installdir" ATLAS-Client
+
+
+#---finished
+
+echo
+echo "ALL DONE"
+echo "Note: All those [WARNING: Untarring...] messages above are expected."
+echo "Note: Also, the VDT/IGTF certificates have been installed, so no further action should be necessary on that front."
+echo "ATLAS-Client installed."
+echo "*** IMPORTANT *** do [cd ATLAS-Client; source ./setup.sh; vdt-control --on] to install the three cron jobs"
+echo "Use [source $PWD/ATLAS-Client/setup.sh] to use it."
