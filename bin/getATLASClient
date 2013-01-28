@@ -1,6 +1,37 @@
 #!/usr/bin/env bash
 set -e
 
+helpstr="\
+NAME
+    getATLASClient - install ATLAS-Client into the cwd
+
+SYNOPSIS
+    getATLASClient
+
+DESCRIPTION
+    Installs ATLAS-Client into a directory named ATLAS-Client.YYYYMMDD and 
+    creates/updates a symbolic link named simply ATLAS-Client that points to 
+    it.  This the symlink already exists, it is changed.
+
+    The ATLAS-Client package requires some cron jobs to be installed (through 
+    vdt-control, for managing CA certs, CRLs, etc.); this does not do that, it 
+    only prints out instructions for doing so.
+
+OPTIONS
+    -h, --help
+        Print this help.
+
+REQUIREMENTS
+    pacman
+
+AUTHOR
+    John Brunelle
+"
+
+getopt -q -l help -o h -- "$@" | egrep -q '^ -h|^ --help' && echo -n "$helpstr" && exit
+
+set -u
+
 
 #---require pacman
 

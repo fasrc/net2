@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -e
+
+helpstr="\
+NAME
+    getpacman - install pacman into the cwd
+
+SYNOPSIS
+    getpacman
+
+DESCRIPTION
+    Installs pacman into a directory named pacman.YYYYMMDD and creates/updates 
+    a symbolic link named simply pacman that points to it.  This the symlink 
+    already exists, it is changed.
+
+OPTIONS
+    -h, --help
+        Print this help.
+
+REQUIREMENTS
+    n/a
+
+AUTHOR
+    John Brunelle
+"
+
+getopt -q -l help -o h -- "$@" | egrep -q '^ -h|^ --help' && echo -n "$helpstr" && exit
+
+set -u
+
+set -u
+
+#---
+
+wget -nc http://physics.bu.edu/pacman/sample_cache/tarballs/pacman-latest.tar.gz
+
+version=$(tar tzf pacman-latest.tar.gz | head -n 1 | awk -F/ '{print $1}' | sed 's/^pacman-//')
+tar --no-same-owner -xzf pacman-latest.tar.gz
+rm pacman-latest.tar.gz
+cd "pacman-$version"
+source ./setup.sh
+cd ..
+
+if [ -h pacman ]; then
+	echo "WARNING: pacman is already a symbolic link, pointing to [$(readlink pacman)]; changing to [$version]" >&2
+	rm -f pacman
+fi
+ln -s "pacman-$version" pacman
+
+echo "Pacman installed."
+echo "Use [source $(pwd)/pacman/setup.sh] to use it."
