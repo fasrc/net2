@@ -17,19 +17,21 @@ DESCRIPTION
     operations so that new jobs do not sneak in.  This script may fail, leaving 
     the node closed.
 
+    This logs to syslog and, if stdout is a tty, the terminal.
+
     Some site specific-things hardcoded below:
         
         - the usatlas1 user
-        
-        - JAB initials for messages
         
         - protections make sure this is run on an ATLAS-related compute node at 
           Harvard.
 
 OPTIONS
+    -f, --force
+        Force the restart, even if the mount looks okay
+
     -v, --verbose
-        Print some extra information (e.g. when /cvmfs is already okay, a 
-        message saying so, instead of just exiting with status 0).
+        Also print a message when /cvmfs is already okay and this does nothing.
 
     -h, --help
         Print this help.
@@ -41,15 +43,20 @@ AUTHOR
     John Brunelle
 "
 
+force=false
 verbose=false
 
-args=$(getopt -l verbose,help -o vh -- "$@")
+args=$(getopt -l force,verbose,help -o fvh -- "$@")
 if [ $? -ne 0 ]; then
 	exit 65  #(getopt will have written the error message)
 fi
 eval set -- "$args"
 while [ ! -z "$1" ]; do
 	case "$1" in
+		-f | --force)
+			force=true
+			;;
+
 		-v | --verbose)
 			verbose=true
 			;;
@@ -66,38 +73,64 @@ while [ ! -z "$1" ]; do
 	shift
 done
 
+logger_args=''
+test -t 1 && logger_args='-s'
+
 set -u
 
 
-#---
+#--- exit if no need to do anything (or don't want to risk it)
 
-
+#restrict this to atlas compute nodes (killing processes and closing the node in LSF is rather aggressive)
+#this is an error, since it shouldn't even be attempted elsewhere
 hostname=$(hostname -s)
 if ! echo "$hostname" | grep -qP '(atlas|hero)\d{4}'; then
-	echo "*** ERROR *** judging by the hostname this is not an ATLAS compute node" >&2
+	logger $logger_args -t "$(basename "$0")" "*** ERROR *** judging by the hostname this is not an ATLAS compute node" >&2
 	exit 1
 fi
 
-set +e
-ls /cvmfs/atlas.cern.ch &>/dev/null
-if [ $? -eq 0 ]; then
-	$verbose && "/cvmfs/atlas.cern.ch looks fine, exiting without doing anything"
+#this skip is debatable, but right now we're trying to unwedge wedged ones -- puppet will re-mount normal stuff, and we don't want yet another thing messing with this
+#this is not an error
+if ! mount | grep -q cvmfs; then
+	logger $logger_args -t "$(basename "$0")" "/cvmfs is not even mounted, will leave it that way" 2>&1
 	exit 0
 fi
-set -e
+
+#check if need to do anything
+if $force; then
+	logger $logger_args -t "$(basename "$0")" "attempting to restart cvmfs regardless of current state" 2>&1
+else
+	set +e
+	ls /cvmfs/atlas.cern.ch &>/dev/null
+	if [ $? -eq 0 ]; then
+		msg="/cvmfs/atlas.cern.ch looks fine, exiting without doing anything"
+		$verbose && echo "$msg"
+		logger -t "$(basename "$0")" "$msg" 2>&1  #no $logger_args, do not want this echoed to screen in interactive mode
+		exit 0
+	fi
+	set -e
+	logger $logger_args -t "$(basename "$0")" "attempting to fix broken cvmfs" 2>&1
+fi
 
 
-echo
-echo "temporarily closing node"
-badmin hclose -C "temporary for cvmfs restart; JAB $(date '+%Y-%m-%d_%H:%M:%S')" "$hostname"
+#--- /cvmfs is broken, try to fix it
 
-echo
-echo "killing all usatlas1 processes"
+node_already_closed=false
+[ "$(bhosts -w $(hostname -s) | tail -n +2 | awk '{print $2}')" = 'closed_Adm' ] && node_already_closed=true
+
+if $node_already_closed; then
+	logger $logger_args -t "$(basename "$0")" "node already closed" 2>&1
+else
+	logger $logger_args -t "$(basename "$0")" "temporarily closing node" 2>&1
+	badmin hclose -C "temporary -- auto-closed by $(basname "$0") at $(date '+%Y-%m-%d_%H:%M:%S')" "$hostname" 2>&1  #(annoying puts it normal messages on stderr)
+fi
+
+logger $logger_args -t "$(basename "$0")" "killing all usatlas1 processes" 2>&1
 set +e
 killall -u usatlas1 -9
 set -e
 
-echo "waiting for usatlas1 processes to go away"
+logger $logger_args -t "$(basename "$0")" "waiting for usatlas1 processes to go away" 2>&1
 i=0
 maxi=15
 while [ "$(ps -o pid= -u usatlas1 | wc -l)" -gt 0 ] && [ "$i" -lt "$maxi" ]; do
@@ -105,19 +138,23 @@ while [ "$(ps -o pid= -u usatlas1 | wc -l)" -gt 0 ] && [ "$i" -lt "$maxi" ]; do
 	i=$(( i + 1 ))
 done
 if [ "$i" -eq "$maxi" ]; then
-	echo "*** ERROR *** still usatlas1 jobs that haven't died, exiting early" >&2
+	logger $logger_args -t "$(basename "$0")" "*** ERROR *** still usatlas1 jobs that haven't died, exiting early" 2>&1
 	exit 1
 fi
 
-echo
-echo "restarting cvmfs"
+logger $logger_args -t "$(basename "$0")" "restarting cvmfs" 2>&1
 set +e  #this seems to give non-zero status even when it works fine sometimes
 service cvmfs restartclean
 set -e
 
-echo
-echo "testing /cvmfs/atlas.cern.ch"
+logger $logger_args -t "$(basename "$0")" "testing /cvmfs/atlas.cern.ch" 2>&1
 ls /cvmfs/atlas.cern.ch
 
-echo "opening node"
-badmin hopen "$hostname"
+if $node_already_closed; then
+	logger $logger_args -t "$(basename "$0")" "node was already closed, not reopening" 2>&1
+else
+	logger $logger_args -t "$(basename "$0")" "reopening node" 2>&1
+	badmin hopen "$hostname" 2>&1  #(annoying puts it normal messages on stderr)
+fi
+
+logger $logger_args -t "$(basename "$0")" "fixed cvmfs" 2>&1
