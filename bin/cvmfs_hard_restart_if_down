@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+set -e
+
+helpstr="\
+NAME
+    cvmfs_hard_restart_if_down - aggressively try to make cvmfs work
+
+SYNOPSIS
+    cvmfs_hard_restart_if_down
+
+DESCRIPTION
+    If /cvmfs/atlas.cern.sh is fine (i.e. if listing it works), this does 
+    nothing;  otherwise, this kills all usatlas1 processes and restarts cvmfs 
+    (restartclean).
+
+    This also does a badmin hclose/hopen of the node around the restart 
+    operations so that new jobs do not sneak in.  This script may fail, leaving 
+    the node closed.
+
+    Some site specific-things hardcoded below:
+        
+        - the usatlas1 user
+        
+        - JAB initials for messages
+        
+        - protections make sure this is run on an ATLAS-related compute node at 
+          Harvard.
+
+OPTIONS
+    -v, --verbose
+        Print some extra information (e.g. when /cvmfs is already okay, a 
+        message saying so, instead of just exiting with status 0).
+
+    -h, --help
+        Print this help.
+
+REQUIREMENTS
+    n/a
+
+AUTHOR
+    John Brunelle
+"
+
+verbose=false
+
+args=$(getopt -l verbose,help -o vh -- "$@")
+if [ $? -ne 0 ]; then
+	exit 65  #(getopt will have written the error message)
+fi
+eval set -- "$args"
+while [ ! -z "$1" ]; do
+	case "$1" in
+		-v | --verbose)
+			verbose=true
+			;;
+		
+		-h | --help)
+			echo -n "$helpstr"
+			exit 0
+			;;
+		--) 
+			shift
+			break
+			;;
+	esac
+	shift
+done
+
+set -u
+
+
+#---
+
+
+hostname=$(hostname -s)
+if ! echo "$hostname" | grep -qP '(atlas|hero)\d{4}'; then
+	echo "*** ERROR *** judging by the hostname this is not an ATLAS compute node" >&2
+	exit 1
+fi
+
+set +e
+ls /cvmfs/atlas.cern.ch &>/dev/null
+if [ $? -eq 0 ]; then
+	$verbose && "/cvmfs/atlas.cern.ch looks fine, exiting without doing anything"
+	exit 0
+fi
+set -e
+
+
+echo
+echo "temporarily closing node"
+badmin hclose -C "temporary for cvmfs restart; JAB $(date '+%Y-%m-%d_%H:%M:%S')" "$hostname"
+
+echo
+echo "killing all usatlas1 processes"
+set +e
+killall -u usatlas1 -9
+set -e
+
+echo "waiting for usatlas1 processes to go away"
+i=0
+maxi=15
+while [ "$(ps -o pid= -u usatlas1 | wc -l)" -gt 0 ] && [ "$i" -lt "$maxi" ]; do
+	sleep 1
+	i=$(( i + 1 ))
+done
+if [ "$i" -eq "$maxi" ]; then
+	echo "*** ERROR *** still usatlas1 jobs that haven't died, exiting early" >&2
+	exit 1
+fi
+
+echo
+echo "restarting cvmfs"
+set +e  #this seems to give non-zero status even when it works fine sometimes
+service cvmfs restartclean
+set -e
+
+echo
+echo "testing /cvmfs/atlas.cern.ch"
+ls /cvmfs/atlas.cern.ch
+
+echo "opening node"
+badmin hopen "$hostname"
