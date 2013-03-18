@@ -9,7 +9,8 @@ SYNOPSIS
     clean_out_stale_grid_stuff
 
 DESCRIPTION
-    Run as a daily cron job.
+    Run as a daily cron job.  There is a hard-coded EXPIRATION in the code
+    below.
 
     Here's some example output, showing what it works on:
       
@@ -22,8 +23,6 @@ DESCRIPTION
 
     It may complain about files that disappear while it's working on them; 
     that's not a problem.
-
-    Run as a daily cron job.
 
     The script assumes there are no spaces in any file or directory names.
     
