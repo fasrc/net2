@@ -127,7 +127,7 @@ fi
 
 logger $logger_args -t "$(basename "$0")" "killing all usatlas1 processes" 2>&1
 set +e
-killall -u usatlas1 -9 &>/dev/null
+killall -u usatlas1 -9 -q
 set -e
 
 logger $logger_args -t "$(basename "$0")" "waiting for usatlas1 processes to go away" 2>&1
