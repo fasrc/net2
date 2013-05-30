@@ -79,13 +79,18 @@ test -t 1 && logger_args='-s'
 set -u
 
 
-#--- exit if no need to do anything (or don't want to risk it)
+#--- exit if no need to do anything (or don't want to risk it, or some other issue)
+
+if [ "$(readlink -e /var/lib/cvmfs)" != '/scratch/cache/cvmfs' ]; then
+	logger $logger_args -t "$(basename "$0")" "*** ERROR *** this node did not properly upgrade from 2.0 to 2.1" >&2
+	exit 1
+fi
 
 #restrict this to atlas compute nodes (killing processes and closing the node in LSF is rather aggressive)
 #this is an error, since it shouldn't even be attempted elsewhere
 hostname=$(hostname -s)
-if ! echo "$hostname" | grep -qP '(atlas|hero)\d{4}'; then
-	logger $logger_args -t "$(basename "$0")" "*** ERROR *** judging by the hostname this is not an ATLAS compute node" >&2
+if ! echo "$hostname" | grep -qP '(atlas\d{4}|hero\d{4}|atlast3[ab]0[12]|heroatlas|herophysics)'; then
+	logger $logger_args -t "$(basename "$0")" "*** ERROR *** judging by the hostname this is not an ATLAS-related node" >&2
 	exit 1
 fi
 
@@ -142,9 +147,12 @@ if [ "$i" -eq "$maxi" ]; then
 	exit 1
 fi
 
-logger $logger_args -t "$(basename "$0")" "restarting cvmfs" 2>&1
+logger $logger_args -t "$(basename "$0")" "wiping cvmfs cache" 2>&1
 set +e  #this seems to give non-zero status even when it works fine sometimes
-service cvmfs restartclean
+##the service went away after upgrading from 2.0 to 2.1
+#service cvmfs restartclean
+cvmfs_config umount
+cvmfs_config wipecache
 set -e
 
 logger $logger_args -t "$(basename "$0")" "testing /cvmfs/atlas.cern.ch" 2>&1
