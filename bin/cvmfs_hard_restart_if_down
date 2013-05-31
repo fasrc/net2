@@ -127,7 +127,7 @@ if $node_already_closed; then
 	logger $logger_args -t "$(basename "$0")" "node already closed" 2>&1
 else
 	logger $logger_args -t "$(basename "$0")" "temporarily closing node" 2>&1
-	badmin hclose -C "temporary -- auto-closed by $(basname "$0") at $(date '+%Y-%m-%d_%H:%M:%S')" "$hostname" 2>&1  #(annoying puts it normal messages on stderr)
+	badmin hclose -C "temporary -- auto-closed by $(basename "$0") at $(date '+%Y-%m-%d_%H:%M:%S')" "$hostname" 2>&1  #(annoying puts it normal messages on stderr)
 fi
 
 logger $logger_args -t "$(basename "$0")" "killing all usatlas1 processes" 2>&1
