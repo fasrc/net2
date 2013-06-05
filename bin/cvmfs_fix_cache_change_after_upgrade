@@ -5,20 +5,22 @@ function stop_cvmfs() {
 	killall -9 -q -u cvmfs cvmfs2
 }
 
-if [ "$(readlink -e /var/lib/cvmfs)" != '/scratch/cache/cvmfs' ]; then
-	#stop it
-	stop_cvmfs
+if cat /var/lib/puppet/classes.txt 2>/dev/null | grep -q cvmfs; then
+	if [ "$(readlink -e /var/lib/cvmfs)" != '/scratch/cache/cvmfs' ]; then
+		#stop it
+		stop_cvmfs
 
-	#clean out old cache
-	rm -fr /scratch/cache/cvmfs2/
-	rm -fr /var/cache/cvmfs2
+		#clean out old cache
+		rm -fr /scratch/cache/cvmfs2/
+		rm -fr /var/cache/cvmfs2
 
-	#make sure still stopped
-	stop_cvmfs
+		#make sure still stopped
+		stop_cvmfs
 
-	#create and symlink new cache
-	rm -fr /scratch/cache/cvmfs
-	mkdir /scratch/cache/cvmfs
-	rm -fr /var/lib/cvmfs
-	ln -s /scratch/cache/cvmfs /var/lib/cvmfs
+		#create and symlink new cache
+		rm -fr /scratch/cache/cvmfs
+		mkdir -p /scratch/cache/cvmfs
+		rm -fr /var/lib/cvmfs
+		ln -s /scratch/cache/cvmfs /var/lib/cvmfs
+	fi
 fi
