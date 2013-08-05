@@ -1,0 +1,126 @@
+<%
+def writeWorld(description, dash, panglianame):
+%>
+<table style="margin-left:auto; margin-right:auto;">
+	<tr>
+		<td colspan=2 style="text-align:left;">
+			<strong><%= description %><br /></strong>
+		</td>
+	<tr/>
+	<tr>
+		<td>
+			<a href="http://panda.cern.ch:25880/server/pandamon/query?dash=<%= dash %>"><img src="http://gridinfo.triumf.ca/panglia/<%= panglianame %>/day-summary.php?SIZE=small" style="border:none;" /></a>
+		</td>
+		<td style="vertical-align:top;">
+			<a href="http://panda.cern.ch:25880/server/pandamon/query?dash=<%= dash %>">dashboard</a>
+			<br />
+			<a href="http://panda.cern.ch:25880/server/pandamon/query?overview=errorlist&type=<%= description %>&hours=12">error&nbsp;summary</a>
+			<br />
+		</td>
+	</tr>
+</table>
+<%
+#end indent
+%>
+
+
+<%
+def writeSite(site, queue):
+%>
+<table style="margin-left:auto; margin-right:auto;">
+	<tr>
+		<td colspan=2 style="text-align:left;">
+			<strong><%= site %><br /></strong>
+		</td>
+	<tr/>
+	<tr>
+		<td>
+			<a href="http://gridinfo.triumf.ca/panglia/site_detail.php?SITE=<%= site %>"><img src="http://gridinfo.triumf.ca/panglia/day.php?SITE=<%= site %>&SIZE=wide" style="border:none;" /></a>
+		</td>
+		<td style="vertical-align:top;">
+			jobs:&nbsp;<a href="http://panda.cern.ch:25980/server/pandamon/query?job=*&hours=12&jobsetID=any&jobStatus=&site=<%= site %>&retrieveAll=yes">all</a>
+			<br />
+			jobs:&nbsp;<a href="http://panda.cern.ch:25980/server/pandamon/query?job=*&hours=12&jobsetID=any&jobStatus=finished&site=<%= site %>&retrieveAll=yes">finished</a>
+			<br />
+			jobs:&nbsp;<a href="http://panda.cern.ch:25980/server/pandamon/query?job=*&hours=12&jobsetID=any&jobStatus=failed&site=<%= site %>&retrieveAll=yes">failed</a>
+			<br />
+			jobs:&nbsp;<a href="http://panda.cern.ch:25980/server/pandamon/query?tp=workers&hours=12&queue=<%= queue %>">by worker node</a>
+			<br />
+			<a href="http://gridinfo.triumf.ca/panglia/site_detail.php?SITE=<%= site %>">panglia</a>
+			<br />
+			<a href="http://panda.cern.ch:25880/server/pandamon/query?tp=queue&id=<%= queue %>">queue&nbsp;config</a>
+			<br />
+			<a href="http://panda.cern.ch:25880/server/pandamon/query?tp=pilots&accepts=<%= site %>">pilots</a>
+			<br />
+		</td>
+	</tr>
+</table>
+<%
+#end indent
+%>
+
+
+<body>
+<head>
+<title>NET2 links</title>
+</head>
+<html>
+
+
+<div style="text-align:center;">
+
+
+<form method=GET target=_blank action="http://panda.cern.ch:25980/server/pandamon/query">
+	http://panda.cern.ch:25980/server/pandamon/query?job=<input type=text name=job size=10 />
+</form>
+
+
+<br />
+<a href="http://panda.cern.ch:25880/server/pandamon/query?dash=clouds#US">online/offline status</a>
+<br />
+<a href="http://panda.cern.ch:25980/server/pandamon/query?ui=user&name=John%20Brunelle">John&nbsp;Brunelle's&nbsp;jobs</a>
+<br />
+
+
+<table>
+<tr>
+
+<td>
+<strong>ATLAS</strong>:
+<%
+for description, dash, panglianame in (
+		('production', 'prod'    , 'summary'),
+		('analysis'  , 'analysis', 'analy'  ),
+	):
+	writeWorld(description, dash, panglianame)
+#end indent
+%>
+</td>
+
+<td>
+<strong>NET2</strong>
+<%
+for site, queue in (
+		('HU_ATLAS_Tier2'      , 'HU_ATLAS_Tier2-lsf'      ),
+		('BU_ATLAS_Tier2o'     , 'BU_ATLAS_Tier2o-pbs'     ),
+		('ANALY_NET2'          , 'ANALY_NET2'              ),
+		('ANALY_HU_ATLAS_Tier2', 'ANALY_HU_ATLAS_Tier2-lsf'),
+	):
+	writeSite(site, queue)
+#end indent
+%>
+</td>
+
+<!--
+<td>
+<img src="http://software.rc.fas.harvard.edu/ganglia_misc/graph.php?c=Access&h=heroatlas.rc.fas.harvard.edu&g=NET2_space_report&z=large&r=hour" />
+</td>
+-->
+
+</tr>
+</table>
+
+</div>
+
+</html>
+</body>
