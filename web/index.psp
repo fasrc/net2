@@ -6,7 +6,7 @@
 
 <table style="margin-left:auto; margin-right:auto;">
 	<tr>
-		<td colspan=3 style="text-align:left;">
+		<td colspan="3" style="text-align:left;">
 			<strong>HU_ATLAS_Tier2<br /></strong>
 		</td>
 	<tr/>
@@ -30,6 +30,11 @@
 			<!--<a href="http://panda.cern.ch/server/pandamon/query?tp=queue&id=HU_ATLAS_Tier2-lsf">queue&nbsp;config</a><br />-->
 			<a href="https://atlas-install.roma1.infn.it/atlas_install/list.php?resource=HU_ATLAS_Tier2">release&nbsp;validations</a></br>
 			<a href="http://panda.cern.ch/server/pandamon/query?mode=site&site=HU_ATLAS_Tier2">HC&nbsp;queuecontrol</a><br />
+		</td>
+	</tr>
+	<tr>
+		<td colspan="3" style="text-align:left;">
+			RSV:&nbsp;<a href="http://net2.rc.fas.harvard.edu/rsv/">local</a>
 		</td>
 	</tr>
 </table>
