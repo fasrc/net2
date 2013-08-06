@@ -1,0 +1,170 @@
+#!/usr/bin/env bash
+
+echo "*** ERROR *** this is not mean to be run, it's just a collection of snippets" >&2
+exit 1
+
+
+#---usatlas1@heroatlas.fas.harvard.edu
+
+#make sure filesystems are mounted
+ls /odyssey/home/usatlas1/
+ls /n/data1/ATLAS/osg
+
+#makes sure gatekeeper hostname is FQDN
+if [ "$(hostname)" != heroatlas.fas.harvard.edu ]; then
+	echo "*** ERROR *** heroatlas hostname is not the FQDN" >&2
+	exit 1
+fi
+
+echo_client/echo_server over a few random ephemeral ports
+
+#===usatlas1@hero*
+
+#---filesystem
+
+ls /odyssey/home/usatlas1/
+ls /n/data1/ATLAS/osg
+ls /n/data1/ATLAS/osg/wn-client
+ls /scratch  #run_command -c 'ls -alFd /scratch' $(workernodes_hu | random_sample -n 5)  #drwxrwxrwt 476 root root 32768 Nov 14 06:29 /scratch/
+
+#---iliadsocks tinyproxy
+
+if [ "$http_proxy" != http://iliadsocks:8888 ]; then
+	echo "*** ERROR *** http_proxy not set correctly" >&2
+	exit 1
+fi
+if [ "$https_proxy" != http://iliadsocks:8888 ]; then
+	echo "*** ERROR *** https_proxy not set correctly" >&2
+	exit 1
+fi
+echo xquit | telnet -ex iliadsocks 8888
+
+curl -p http://www.google.com/
+curl -p -k https://www.usatlas.bnl.gov/  #(-p doesn't actually seem necessary, -k is only necessary for https)
+curl --connect-timeout 20 --max-time 120 --insecure -s -S https://www.bnl.gov/world/  #(sometimes get error code 56 or 58, a BNL issue I believe)
+curl --connect-timeout 20 --max-time 120 -s -S http://www.usatlas.bnl.gov/svn/panda/autopilot/trunk/
+
+	
+necp (on WNs)
+	$ run_command -c 'tsocks ssh harvard@atlas.bu.edu id' $(workernodes_hu | random_sample -n 5)
+		$ run_command -c 'date; tsocks ssh harvard@atlas.bu.edu id; date' $(workernodes_hu | random_sample -n 5) 2>&1 | tee tsocks_all_nodes
+		in egg
+			nodes
+				$ tr din:text dout:ssh lines tr din:stdout dout:text sh code:workernodes_hu .
+				$ tr din:text dout:ssh lines tr din:stdout dout:text sh code:'workernodes_hu | random_sample -n 5' .
+			shell code
+				sh mode:series timeout:15 code:'tsocks ssh harvard@atlas.bu.edu id'
+			peek
+				peek
+			collection
+				collect d:stderr rem d:error
+			ls
+				ls D:2
+			all together
+				ls D:2 collect d:stderr rem d:error peek sh mode:series timeout:15 code:'tsocks ssh harvard@atlas.bu.edu id' tr din:text dout:ssh lines tr din:stdout dout:text sh code:'workernodes_hu' .
+			or
+				. < tsocks_test < peek sh mode:series timeout:30 code:'tsocks ssh harvard@atlas.bu.edu id' tr din:text dout:ssh lines tr din:stdout dout:text sh code:'workernodes_hu' .
+	necp
+		cd to a node
+		$ cd /scratch
+		$ echo foo > foo
+		$ necp $(pwd)/foo /gpfs1/jab
+		$ rm ./foo
+		$ necp /gpfs1/jab/foo $(pwd)/foo
+		$ cat foo
+		$ rm ./foo
+		from somewhere else
+			$ globus-job-run atlas.bu.edu /bin/sh -c "rm /gpfs1/jab/foo"
+lsf (as usatlas1 on CE)
+	$ su - usatlas1
+	$ bsub -I -q ATLAS_Analysis   /usr/bin/id
+	$ bsub -I -q ATLAS_Production /usr/bin/id
+
+LFC
+	$ source /n/data1/ATLAS/osg/wn-client/setup.sh
+	$ export LFC_HOST=heroatlas.fas.harvard.edu
+	$ lfc-ls -l /grid/atlas/dq2
+
+conditions db access
+	$ echo xquit | telnet -ex voracluster01.usatlas.bnl.gov 1521
+
+globus (on client)
+	(does NOT work from BNL interactive machine (doesn't work from there to BU either))
+
+
+h=cobalt.uit.tufts.edu
+j=jobmanager-lsf
+q=atlas_prod
+p=/scratch
+
+h=net2.bu.edu
+j=jobmanager-sge
+q=opteron
+p=/gpfs1/tmp
+
+h=net2.rc.fas.harvard.edu
+j=jobmanager-lsf
+q=ATLAS_Production
+p=/scratch/tmp
+
+globus-gatekeeper
+	globusrun -a -r $h
+	globus-job-run $h /usr/bin/id
+	##this won't work unless default queues are setup correctly
+	#globus-job-run $h/jobmanager-lsf /usr/bin/id
+	globusrun -s -r $h/$j '&(executable=/usr/bin/id)(queue='$q')(two_phase=600)(save_state=yes)'
+		globusrun -s -r heroatlas.fas.harvard.edu/jobmanager-lsf '&(executable=/usr/bin/id)(queue=ATLAS_Production)(two_phase=600)(save_state=yes)'
+		globusrun -s -r atlas.bu.edu/jobmanager-pbs '&(executable=/usr/bin/id)(queue=opteron)(two_phase=600)(save_state=yes)'
+		globusrun -s -r cobalt.uit.tufts.edu/jobmanager-lsf '&(executable=/usr/bin/id)(queue=atlas_prod)(two_phase=600)(save_state=yes)'
+	##can also add, e.g. arguments
+	#globusrun -s -r $h/$j '&(executable=/bin/sleep)(arguments=180)(queue='$q')(two_phase=600)(save_state=yes)'
+gsiftp
+	echo foo > foo
+	globus-url-copy -vb file://$(pwd)/foo gsiftp://"$h$p"/foo
+	rm foo
+	globus-url-copy -vb gsiftp://$h$p/foo file://$(pwd)/foo
+
+	#cleanup
+	rm foo
+	globus-job-run $h /usr/bin/env rm "$p/foo"
+
+lsm
+	as usatlas1
+		note that this will call pcache.py and write to it's log (it doesn't write to the lsm.log, though, since it uses the --debug switch)
+		test installation
+			ssh to a worker node; this finds the most free ones:
+				$ bjobs | grep -oP 'atlas\d\d\d\d' | sort | uniq -c | sort -n | head
+			window 1
+				$ mkdir -p /scratch/usatlas1
+				$ cd $_
+				$ rm -fr install
+				$ mkdir install
+				$ cd $_
+				$ source /n/sw/pacman/setup.sh
+				$ pacman -allow trust-all-caches -get JAB:lsm
+			window 2
+				$ cd /scratch/usatlas1
+				$ rm -fr tmp
+				$ mkdir tmp
+				$ cd $_
+				$ source ../install/setup.sh
+				$ lsm-test
+		production installation
+			$ source /n/data1/ATLAS/osg/wn-client/setup.sh
+			cd to an empty scratch directory
+			$ lsm-test
+				should end with a SUCCESS message (note that it now checks to make sure the log file exists and is writable, so there are no further instructions)
+		must also check that usatlas1 can write to the LOGFILE mentioned at the end of the lsm-test output
+
+	##this is old
+	#(this doesn't actually test if they're in the PATH, since everything's hardcoded explicitly)
+	#make sure that switch at the top of the test is correct
+	#cd to a node
+	#$ cd /scratch/jab  #or some other empty directory
+	#$ source /n/data1/ATLAS/osg/wn-client/setup.sh
+	#$ which lsm-get
+	#$ which adler32.jab
+	#$ export PATH="$PATH:/n/data1/ATLAS/osg/wn-client/jab/util"  #extra stuff needed for test.sh
+	#$ /n/data1/ATLAS/jab/_testing/lsm/test.sh  #make sure it has the right switch at the top
+	#from a different window...
+	#	$ tail -f /n/data1/ATLAS/log/lsm.log
