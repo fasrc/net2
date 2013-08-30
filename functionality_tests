@@ -4,6 +4,68 @@ echo "*** ERROR *** this is not mean to be run, it's just a collection of snippe
 exit 1
 
 
+#--- pick one of these
+
+h=net2.rc.fas.harvard.edu
+j=jobmanager-lsf
+q=ATLAS_Production
+p=/scratch/tmp
+
+h=net2.bu.edu
+j=jobmanager-sge
+q=opteron
+p=/gpfs1/tmp
+
+h=cobalt.uit.tufts.edu
+j=jobmanager-lsf
+q=atlas_prod
+p=/scratch
+
+
+#--- globus-gatekeeper
+
+#check auth
+globusrun -a -r $h
+	
+#check fork job
+globus-job-run $h /usr/bin/id
+
+#check batch job
+
+##this won't work unless default queues are setup correctly
+#globus-job-run $h/jobmanager-lsf /usr/bin/id
+	
+globusrun -s -r $h/$j '&(executable=/usr/bin/id)(queue='$q')(two_phase=600)(save_state=yes)'
+##specifically:
+#globusrun -s -r heroatlas.fas.harvard.edu/jobmanager-lsf '&(executable=/usr/bin/id)(queue=ATLAS_Production)(two_phase=600)(save_state=yes)'
+#globusrun -s -r atlas.bu.edu/jobmanager-pbs '&(executable=/usr/bin/id)(queue=opteron)(two_phase=600)(save_state=yes)'
+#globusrun -s -r cobalt.uit.tufts.edu/jobmanager-lsf '&(executable=/usr/bin/id)(queue=atlas_prod)(two_phase=600)(save_state=yes)'
+	
+##can also add, e.g. arguments
+#globusrun -s -r $h/$j '&(executable=/bin/sleep)(arguments=180)(queue='$q')(two_phase=600)(save_state=yes)'
+
+
+#--- gsiftp
+
+#setup
+cd /tmp
+echo foo > foo
+
+#test
+globus-url-copy -vb file://$(pwd)/foo gsiftp://"$h$p"/foo
+rm foo
+globus-url-copy -vb gsiftp://$h$p/foo file://$(pwd)/foo
+
+#cleanup
+rm foo
+globus-job-run $h /usr/bin/env rm "$p/foo"  #(or just remove it manually on the gatekeeper)
+
+
+
+##############################################################################
+
+
+
 #---usatlas1@heroatlas.fas.harvard.edu
 
 #make sure filesystems are mounted
@@ -92,41 +154,7 @@ globus (on client)
 	(does NOT work from BNL interactive machine (doesn't work from there to BU either))
 
 
-h=cobalt.uit.tufts.edu
-j=jobmanager-lsf
-q=atlas_prod
-p=/scratch
 
-h=net2.bu.edu
-j=jobmanager-sge
-q=opteron
-p=/gpfs1/tmp
-
-h=net2.rc.fas.harvard.edu
-j=jobmanager-lsf
-q=ATLAS_Production
-p=/scratch/tmp
-
-globus-gatekeeper
-	globusrun -a -r $h
-	globus-job-run $h /usr/bin/id
-	##this won't work unless default queues are setup correctly
-	#globus-job-run $h/jobmanager-lsf /usr/bin/id
-	globusrun -s -r $h/$j '&(executable=/usr/bin/id)(queue='$q')(two_phase=600)(save_state=yes)'
-		globusrun -s -r heroatlas.fas.harvard.edu/jobmanager-lsf '&(executable=/usr/bin/id)(queue=ATLAS_Production)(two_phase=600)(save_state=yes)'
-		globusrun -s -r atlas.bu.edu/jobmanager-pbs '&(executable=/usr/bin/id)(queue=opteron)(two_phase=600)(save_state=yes)'
-		globusrun -s -r cobalt.uit.tufts.edu/jobmanager-lsf '&(executable=/usr/bin/id)(queue=atlas_prod)(two_phase=600)(save_state=yes)'
-	##can also add, e.g. arguments
-	#globusrun -s -r $h/$j '&(executable=/bin/sleep)(arguments=180)(queue='$q')(two_phase=600)(save_state=yes)'
-gsiftp
-	echo foo > foo
-	globus-url-copy -vb file://$(pwd)/foo gsiftp://"$h$p"/foo
-	rm foo
-	globus-url-copy -vb gsiftp://$h$p/foo file://$(pwd)/foo
-
-	#cleanup
-	rm foo
-	globus-job-run $h /usr/bin/env rm "$p/foo"
 
 lsm
 	as usatlas1

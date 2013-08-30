@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+
+#--- base os
+
+issue='CentOS release 6.4'
+if ! grep -qF "$issue" /etc/issue; then
+	echo "not $issue"
+	good=false
+fi
+
+
+#--- installed packages
+
+#currently good:
+#	8f8145784df3aed7ef04d9f47ca98438 -- atlas5* w/ 358
+#	e419b55a7c6d3f7c5789c9d9a260ca1b -- atlas6* w/ 358
+#	174438fbec1f9ae4e01701dbd782df95 -- atlas5* w/ 279
+#	eaefcb7c54428c3f884aef063a49912c -- atlas6* w/ 279
+#older:
+#	697f1e0100fd02fc7c4d7707a8504be9 -- atlas5* before cmvfs
+#	7ba98b9f8725928376fa13f691ee3127 -- atlas5* before sssd
+rpmmd5="$(rpm -qa | sort | md5sum | awk '{print $1}')"
+if \
+	[ "$rpmmd5" != '8f8145784df3aed7ef04d9f47ca98438' ] && \
+	[ "$rpmmd5" != 'e419b55a7c6d3f7c5789c9d9a260ca1b' ] && \
+	[ "$rpmmd5" != '174438fbec1f9ae4e01701dbd782df95' ] && \
+	[ "$rpmmd5" != 'eaefcb7c54428c3f884aef063a49912c' ] \
+	; then
+	echo "bad set of packages"
+	good=false
+fi
+
+
+#--- sssd/nslcd/nscd
+
+if [ "$(id -u usatlas1 2>/dev/null)" != '34905' ]; then
+	echo "bad uid/gid caching"
+	good=false
+fi
+
+
+#--- cvmfs
+
+if [ "$(ls /cvmfs/atlas.cern.ch)" != 'repo' ]; then
+	echo "bad cvmfs" >&2
+	good=false
+fi
+
+if ! [ -L /var/lib/cvmfs ]; then
+	echo "bad cvmfs cache dir" >&2
+	good=false
+fi
+
+
+$good || exit 1
