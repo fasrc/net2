@@ -3,16 +3,35 @@
 
 #--- base os
 
-issue='CentOS release 6.4'
-if ! grep -qF "$issue" /etc/issue; then
-	echo "not $issue"
+issue="$(head -n 1 /etc/issue)"
+if [ "$issue" != 'CentOS release 6.4 (Final)' ]; then
+	echo "bad issue: $issue"
+	good=false
+fi
+
+kernel="$(uname -r)"
+if [ "$kernel" != '2.6.32-358.11.1.el6.x86_64' ]; then
+	echo "bad kernel: $kernel"
 	good=false
 fi
 
 
 #--- installed packages
 
-#currently good:
+#currently good (two hardware types end up with different)
+#	#2013-08-30, brand new rebuild, 2.6.32-358.11.1.el6.x86_64, fully yum updated, puppet stable
+#	3238802324952aaf1347c6a56bcf8d4b  #atlas5* (e.g. atlas5805)
+#	3e395bfeb9f92b3f5a183e174ed67d36  #atlas6* (e.g. atlas6101)
+#
+#	#2013-08-30, 2.6.32-358.11.1.el6.x86_64, fully yum updated, puppet stable
+#	2d0024a003d8b53df705bd408a8d5462  #atlas5* (e.g. atlas5311)
+#	a611f2d6bbfe8d60e38a7958e6603102  #atlas6* (e.g. atlas6003)
+#
+#	---
+#
+#	48d5094377d4080a050ddd24bc9854cb  #atlas5201, after yum update (slurm 2.6.1)
+#	b2a97d3ee23bdcad29ffd04e0348bc79  #atlas5201, after puppet (slurm 2.5.7)
+#
 #	8f8145784df3aed7ef04d9f47ca98438 -- atlas5* w/ 358
 #	e419b55a7c6d3f7c5789c9d9a260ca1b -- atlas6* w/ 358
 #	174438fbec1f9ae4e01701dbd782df95 -- atlas5* w/ 279
@@ -20,14 +39,14 @@ fi
 #older:
 #	697f1e0100fd02fc7c4d7707a8504be9 -- atlas5* before cmvfs
 #	7ba98b9f8725928376fa13f691ee3127 -- atlas5* before sssd
-rpmmd5="$(rpm -qa | sort | md5sum | awk '{print $1}')"
+rpmmd5="$(rpm -qa | LC_ALL=C sort | md5sum | awk '{print $1}')"
 if \
-	[ "$rpmmd5" != '8f8145784df3aed7ef04d9f47ca98438' ] && \
-	[ "$rpmmd5" != 'e419b55a7c6d3f7c5789c9d9a260ca1b' ] && \
-	[ "$rpmmd5" != '174438fbec1f9ae4e01701dbd782df95' ] && \
-	[ "$rpmmd5" != 'eaefcb7c54428c3f884aef063a49912c' ] \
+	[ "$rpmmd5" != '3238802324952aaf1347c6a56bcf8d4b' ] && \
+	[ "$rpmmd5" != '3e395bfeb9f92b3f5a183e174ed67d36' ] && \
+	[ "$rpmmd5" != '2d0024a003d8b53df705bd408a8d5462' ] && \
+	[ "$rpmmd5" != 'a611f2d6bbfe8d60e38a7958e6603102' ] \
 	; then
-	echo "bad set of packages"
+	echo "bad set of packages: $rpmmd5"
 	good=false
 fi
 
