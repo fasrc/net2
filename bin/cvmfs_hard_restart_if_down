@@ -97,8 +97,10 @@ fi
 #this skip is debatable, but right now we're trying to unwedge wedged ones -- puppet will re-mount normal stuff, and we don't want yet another thing messing with this
 #this is not an error
 if ! mount | grep -q cvmfs; then
-	logger $logger_args -t "$(basename "$0")" "/cvmfs is not even mounted, will leave it that way" 2>&1
-	exit 0
+	if ! $force; then
+		logger $logger_args -t "$(basename "$0")" "/cvmfs is not even mounted, will leave it that way" 2>&1
+		exit 0
+	fi
 fi
 
 #check if need to do anything
