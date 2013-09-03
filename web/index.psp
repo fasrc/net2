@@ -4,6 +4,13 @@
 </head>
 <body>
 
+<center>
+<a href="http://panda.cern.ch/server/pandamon/query?dash=clouds#US">online/offline status</a>
+<br />
+<a href="http://panda.cern.ch/server/pandamon/query?ui=user&name=John%20Brunelle">John&nbsp;Brunelle's&nbsp;jobs</a>
+<br />
+</center>
+
 <table style="margin-left:auto; margin-right:auto;">
 	<tr>
 		<td colspan="3" style="text-align:left;">
