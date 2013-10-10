@@ -1,5 +1,84 @@
 #!/usr/bin/env bash
 
+#!/usr/bin/env bash
+set -e
+
+helpstr="\
+NAME
+	check_worker_node.hu - a test of ATLAS WN viability at Harvard
+
+SYNOPSIS
+	check_worker_node.hu
+
+DESCRIPTION
+	This script should run silently and exit status 0.  If not, it will output what's wrong.
+
+	This checks things such as:
+		
+		* kernel version
+		* operating system distribution
+		* /cvmfs/atlas.cern.ch is functional
+		* checksum of rpm package listing
+
+OPTIONS
+	--no-rpm-checksum
+		Do not compare the checksum the rpm package listing to the expected value.
+
+	-h, --help
+		Print this help.
+
+REQUIREMENTS
+	n/a
+
+BUGS/TODO
+	n/a
+
+EXAMPLES
+	get the current set of good nodes:
+		$ pdsh -g lsf.atlas_all '/odyssey/rc_admin/sw/net2/bin/check_worker_node.hu --no-rpm-checksum &>/dev/null && hostname || true' 2>/dev/null | awk -F: '{print \$1}' | sort | tr '\\n' ' '
+		but then remove any that are also in atlas_bad
+	
+	get the current set of issue nodes (to be fixed, or added to atlas_bad):
+		$ comm -2 -3 <(comm -2 -3 <(bmgroup -r atlas_all | grep -oP 'atlas\d{4}' | sort) <(bmgroup -r atlas | grep -oP 'atlas\d{4}' | sort)) <(bmgroup -r atlas_bad | grep -oP 'atlas\d{4}' | sort)
+
+AUTHOR
+	Copyright (c) 2013, John A. Brunelle
+	All rights reserved.
+"
+
+no_rpm_checksum=false
+
+args=$(getopt -n "$(basename "$0")" -l no-rpm-checksum,help -o h -- "$@")
+if [ $? -ne 0 ]; then
+	exit 65  #(getopt will have written the error message)
+fi
+eval set -- "$args"
+while [ ! -z "$1" ]; do
+	case "$1" in
+		--no-rpm-checksum)
+			no_rpm_checksum=true
+			;;
+
+		-h | --help)
+			echo -n "$helpstr"
+			exit 0
+			;;
+		--) 
+			shift
+			break
+			;;
+	esac
+	shift
+done
+
+set -u
+
+
+#---
+
+
+good=true
+
 
 #--- base os
 
@@ -18,36 +97,38 @@ fi
 
 #--- installed packages
 
-#currently good (two hardware types end up with different)
-#	#2013-08-30, brand new rebuild, 2.6.32-358.11.1.el6.x86_64, fully yum updated, puppet stable
-#	3238802324952aaf1347c6a56bcf8d4b  #atlas5* (e.g. atlas5805)
-#	3e395bfeb9f92b3f5a183e174ed67d36  #atlas6* (e.g. atlas6101)
-#
-#	#2013-08-30, 2.6.32-358.11.1.el6.x86_64, fully yum updated, puppet stable
-#	2d0024a003d8b53df705bd408a8d5462  #atlas5* (e.g. atlas5311)
-#	a611f2d6bbfe8d60e38a7958e6603102  #atlas6* (e.g. atlas6003)
-#
-#	---
-#
-#	48d5094377d4080a050ddd24bc9854cb  #atlas5201, after yum update (slurm 2.6.1)
-#	b2a97d3ee23bdcad29ffd04e0348bc79  #atlas5201, after puppet (slurm 2.5.7)
-#
-#	8f8145784df3aed7ef04d9f47ca98438 -- atlas5* w/ 358
-#	e419b55a7c6d3f7c5789c9d9a260ca1b -- atlas6* w/ 358
-#	174438fbec1f9ae4e01701dbd782df95 -- atlas5* w/ 279
-#	eaefcb7c54428c3f884aef063a49912c -- atlas6* w/ 279
-#older:
-#	697f1e0100fd02fc7c4d7707a8504be9 -- atlas5* before cmvfs
-#	7ba98b9f8725928376fa13f691ee3127 -- atlas5* before sssd
-rpmmd5="$(rpm -qa | LC_ALL=C sort | md5sum | awk '{print $1}')"
-if \
-	[ "$rpmmd5" != '3238802324952aaf1347c6a56bcf8d4b' ] && \
-	[ "$rpmmd5" != '3e395bfeb9f92b3f5a183e174ed67d36' ] && \
-	[ "$rpmmd5" != '2d0024a003d8b53df705bd408a8d5462' ] && \
-	[ "$rpmmd5" != 'a611f2d6bbfe8d60e38a7958e6603102' ] \
-	; then
-	echo "bad set of packages: $rpmmd5"
-	good=false
+if ! $no_rpm_checksum; then
+	#currently good (two hardware types end up with different)
+	#	#2013-08-30, brand new rebuild, 2.6.32-358.11.1.el6.x86_64, fully yum updated, puppet stable
+	#	3238802324952aaf1347c6a56bcf8d4b  #atlas5* (e.g. atlas5805)
+	#	3e395bfeb9f92b3f5a183e174ed67d36  #atlas6* (e.g. atlas6101)
+	#
+	#	#2013-08-30, 2.6.32-358.11.1.el6.x86_64, fully yum updated, puppet stable
+	#	2d0024a003d8b53df705bd408a8d5462  #atlas5* (e.g. atlas5311)
+	#	a611f2d6bbfe8d60e38a7958e6603102  #atlas6* (e.g. atlas6003)
+	#
+	#	---
+	#
+	#	48d5094377d4080a050ddd24bc9854cb  #atlas5201, after yum update (slurm 2.6.1)
+	#	b2a97d3ee23bdcad29ffd04e0348bc79  #atlas5201, after puppet (slurm 2.5.7)
+	#
+	#	8f8145784df3aed7ef04d9f47ca98438 -- atlas5* w/ 358
+	#	e419b55a7c6d3f7c5789c9d9a260ca1b -- atlas6* w/ 358
+	#	174438fbec1f9ae4e01701dbd782df95 -- atlas5* w/ 279
+	#	eaefcb7c54428c3f884aef063a49912c -- atlas6* w/ 279
+	#older:
+	#	697f1e0100fd02fc7c4d7707a8504be9 -- atlas5* before cmvfs
+	#	7ba98b9f8725928376fa13f691ee3127 -- atlas5* before sssd
+	rpmmd5="$(rpm -qa | LC_ALL=C sort | md5sum | awk '{print $1}')"
+	if \
+		[ "$rpmmd5" != '3238802324952aaf1347c6a56bcf8d4b' ] && \
+		[ "$rpmmd5" != '3e395bfeb9f92b3f5a183e174ed67d36' ] && \
+		[ "$rpmmd5" != '2d0024a003d8b53df705bd408a8d5462' ] && \
+		[ "$rpmmd5" != 'a611f2d6bbfe8d60e38a7958e6603102' ] \
+		; then
+		echo "bad set of packages: $rpmmd5"
+		good=false
+	fi
 fi
 
 
@@ -61,7 +142,7 @@ fi
 
 #--- cvmfs
 
-if [ "$(ls /cvmfs/atlas.cern.ch)" != 'repo' ]; then
+if [ "$(ls /cvmfs/atlas.cern.ch 2>/dev/null)" != 'repo' ]; then
 	echo "bad cvmfs" >&2
 	good=false
 fi
