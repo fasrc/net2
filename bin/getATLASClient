@@ -18,6 +18,10 @@ DESCRIPTION
     only prints out instructions for doing so.
 
 OPTIONS
+    --no-symlink-update
+        By default, this re-points the symbolic link \`ATLAS-Client', if it 
+        exists, to this new version; using this option disables this feature.
+
     -h, --help
         Print this help.
 
@@ -28,7 +32,30 @@ AUTHOR
     John Brunelle
 "
 
-getopt -q -l help -o h -- "$@" | egrep -q '^ -h|^ --help' && echo -n "$helpstr" && exit
+no_symlink_update=false
+
+args=$(getopt -n "$(basename "$0")" -l no-symlink-update,help -o h -- "$@")
+if [ $? -ne 0 ]; then
+	exit 65  #(getopt will have written the error message)
+fi
+eval set -- "$args"
+while [ ! -z "$1" ]; do
+	case "$1" in
+		--no-symlink-update)
+			no_symlink_update=true
+			;;
+
+		-h | --help)
+			echo -n "$helpstr"
+			exit 0
+			;;
+		--) 
+			shift
+			break
+			;;
+	esac
+	shift
+done
 
 set -u
 
@@ -114,11 +141,13 @@ vdt-ca-manage setupca --url osg --location local
 
 cd ..
 
-if [ -h ATLAS-Client ]; then
-	echo "WARNING: ATLAS-Client is already a symbolic link, pointing to [$(readlink ATLAS-Client)]; changing to [$installdir]" >&2
-	rm -f ATLAS-Client
+if ! $no_symlink_update; then
+	if [ -L ATLAS-Client ]; then
+		echo "WARNING: ATLAS-Client is already a symbolic link, pointing to [$(readlink ATLAS-Client)]; changing to [$installdir]" >&2
+		rm -f ATLAS-Client
+	fi
+	ln -s "$installdir" ATLAS-Client
 fi
-ln -s "$installdir" ATLAS-Client
 
 
 #---finished
