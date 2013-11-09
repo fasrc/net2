@@ -9,7 +9,7 @@ exit 1
 h=net2.rc.fas.harvard.edu
 j=jobmanager-lsf
 q=ATLAS_Production
-p=/scratch/tmp
+p=/tmp
 
 h=net2.bu.edu
 j=jobmanager-sge
@@ -22,12 +22,21 @@ q=atlas_prod
 p=/scratch
 
 
+
+###############################################################################
+
+
+#=== base globus stuff
+
+
 #--- globus-gatekeeper
 
 #check auth
+
 globusrun -a -r $h
 	
 #check fork job
+
 globus-job-run $h /usr/bin/id
 
 #check batch job
@@ -37,6 +46,7 @@ globus-job-run $h /usr/bin/id
 	
 globusrun -s -r $h/$j '&(executable=/usr/bin/id)(queue='$q')(two_phase=600)(save_state=yes)'
 ##specifically:
+#globusrun -s -r net2.rc.fas.harvard.edu/jobmanager-lsf '&(executable=/usr/bin/id)(queue=ATLAS_Production)(two_phase=600)(save_state=yes)'
 #globusrun -s -r heroatlas.fas.harvard.edu/jobmanager-lsf '&(executable=/usr/bin/id)(queue=ATLAS_Production)(two_phase=600)(save_state=yes)'
 #globusrun -s -r atlas.bu.edu/jobmanager-pbs '&(executable=/usr/bin/id)(queue=opteron)(two_phase=600)(save_state=yes)'
 #globusrun -s -r cobalt.uit.tufts.edu/jobmanager-lsf '&(executable=/usr/bin/id)(queue=atlas_prod)(two_phase=600)(save_state=yes)'
@@ -62,8 +72,65 @@ globus-job-run $h /usr/bin/env rm "$p/foo"  #(or just remove it manually on the 
 
 
 
-##############################################################################
+###############################################################################
 
+
+#=== rsv, bdii, gratia, etc.
+
+
+#--- bdii
+
+#feed status -- for each site make sure there are some recent update times in all columns
+http://is.grid.iu.edu/cgi-bin/status.cgi
+	NET2
+	HU_ATLAS_Tier2
+	NET2_HU
+
+#MyOSG, all of NET2
+https://myosg.grid.iu.edu/rgbdii/index?summary_attrs_showservice=on&summary_attrs_showrsvstatus=on&summary_attrs_showfqdn=on&gip_status_attrs_showtestresults=on&downtime_attrs_showpast=&account_type=cumulative_hours&ce_account_type=gip_vo&se_account_type=vo_transfer_volume&bdiitree_type=total_jobs&bdii_object=cluster&bdii_server=is-osg&start_type=7daysago&start_date=11%2F07%2F2013&end_type=now&end_date=11%2F07%2F2013&facility_10009=on&site=on&site_10045=on&site_10084=on&gridtype=on&gridtype_1=on&active_value=1&disable_value=1
+
+
+#--- gip
+
+#MyOSG, all of NET2
+https://myosg.grid.iu.edu/rggipstatus/index?summary_attrs_showservice=on&summary_attrs_showrsvstatus=on&summary_attrs_showfqdn=on&gip_status_attrs_showtestresults=on&downtime_attrs_showpast=&account_type=cumulative_hours&ce_account_type=gip_vo&se_account_type=vo_transfer_volume&bdiitree_type=total_jobs&bdii_object=service&bdii_server=is-osg&start_type=7daysago&start_date=11%2F07%2F2013&end_type=now&end_date=11%2F07%2F2013&facility_10009=on&site=on&site_10045=on&site_10084=on&gridtype=on&gridtype_1=on&service=on&service_1=on&active_value=1&disable_value=1
+
+
+#--- gratia
+
+#MyOSG; all of NET2, stacked by VO
+https://myosg.grid.iu.edu/rgaccount/index?summary_attrs_showservice=on&summary_attrs_showrsvstatus=on&summary_attrs_showfqdn=on&gip_status_attrs_showtestresults=on&downtime_attrs_showpast=&account_type=daily_hours_byvo&ce_account_type=gip_vo&se_account_type=vo_transfer_volume&bdiitree_type=total_jobs&bdii_object=service&bdii_server=is-osg&start_type=7daysago&start_date=11%2F07%2F2013&end_type=now&end_date=11%2F07%2F2013&facility_10009=on&site=on&site_10045=on&site_10084=on&gridtype=on&gridtype_1=on&active=on&active_value=1&disable_value=1
+
+#GratiaWeb directly; all of NET2, stacked by site
+http://gratiaweb.grid.iu.edu/gratia/bysite?facility=NET2|HU_ATLAS_Tier2|NET2_HU
+
+##there is this, too, but I don't have the browser plugin and haven't investigated
+#http://gratia-osg-prod-reports.opensciencegrid.org/gratia-reporting/
+
+
+#--- rsv
+
+#local status page -- make sure all green
+http://net2.rc.fas.harvard.edu/rsv/
+##some of these are failing; won't matter once fully move to net2.rc
+#https://heroatlas.fas.harvard.edu:8443/rsv/
+
+#MyOSG, all of NET2
+https://myosg.grid.iu.edu/rgcurrentstatus/index?summary_attrs_showservice=on&summary_attrs_showrsvstatus=on&summary_attrs_showfqdn=on&current_status_attrs_shownc=on&gip_status_attrs_showtestresults=on&downtime_attrs_showpast=&account_type=cumulative_hours&ce_account_type=gip_vo&se_account_type=vo_transfer_volume&bdiitree_type=total_jobs&bdii_object=service&bdii_server=is-osg&start_type=7daysago&start_date=11%2F07%2F2013&end_type=now&end_date=11%2F07%2F2013&facility_10009=on&site=on&site_10045=on&site_10084=on&gridtype=on&gridtype_1=on&active_value=1&disable_value=1
+
+
+
+
+
+
+
+
+
+
+###############################################################################
+
+
+#=== old stuff
 
 
 #---usatlas1@heroatlas.fas.harvard.edu
