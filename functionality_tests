@@ -119,6 +119,9 @@ http://net2.rc.fas.harvard.edu/rsv/
 https://myosg.grid.iu.edu/rgcurrentstatus/index?summary_attrs_showservice=on&summary_attrs_showrsvstatus=on&summary_attrs_showfqdn=on&current_status_attrs_shownc=on&gip_status_attrs_showtestresults=on&downtime_attrs_showpast=&account_type=cumulative_hours&ce_account_type=gip_vo&se_account_type=vo_transfer_volume&bdiitree_type=total_jobs&bdii_object=service&bdii_server=is-osg&start_type=7daysago&start_date=11%2F07%2F2013&end_type=now&end_date=11%2F07%2F2013&facility_10009=on&site=on&site_10045=on&site_10084=on&gridtype=on&gridtype_1=on&active_value=1&disable_value=1
 
 
+#--- sam
+
+https://sam-atlas-prod.cern.ch/nagios/cgi-bin/status.cgi?host=heroatlas.fas.harvard.edu
 
 
 
