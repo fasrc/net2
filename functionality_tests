@@ -77,6 +77,8 @@ globus-job-run $h /usr/bin/env rm "$p/foo"  #(or just remove it manually on the 
 
 #=== rsv, bdii, gratia, etc.
 
+OIM
+
 
 #--- bdii
 
