@@ -108,7 +108,7 @@ if $force; then
 	logger $logger_args -t "$(basename "$0")" "attempting to restart cvmfs regardless of current state" 2>&1
 else
 	set +e
-	ls /cvmfs/atlas.cern.ch &>/dev/null
+	ls /cvmfs/atlas.cern.ch &>/dev/null && ls /cvmfs/atlas-condb.cern.ch &>/dev/null && ls /cvmfs/atlas-nightlies.cern.ch &>/dev/null
 	if [ $? -eq 0 ]; then
 		msg="/cvmfs/atlas.cern.ch looks fine, exiting without doing anything"
 		$verbose && echo "$msg"
