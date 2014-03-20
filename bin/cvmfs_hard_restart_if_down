@@ -76,6 +76,8 @@ done
 logger_args=''
 test -t 1 && logger_args='-s'
 
+test -e /etc/profile.d/lsf.sh && source /etc/profile.d/lsf.sh
+
 set -u
 
 
