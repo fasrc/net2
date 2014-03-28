@@ -126,6 +126,13 @@ https://myosg.grid.iu.edu/rgcurrentstatus/index?summary_attrs_showservice=on&sum
 https://sam-atlas-prod.cern.ch/nagios/cgi-bin/status.cgi?host=heroatlas.fas.harvard.edu
 
 
+#--- squid
+
+#availability
+http://dashb-atlas-ssb.cern.ch/dashboard/request.py/sitehistory?site=HU_ATLAS_Tier2#currentView=Frontier_Squid
+#stats
+http://wlcg-squid-monitor.cern.ch/snmpstats/mrtgatlas/HU_ATLAS_Tier2/index.html
+
 
 
 
