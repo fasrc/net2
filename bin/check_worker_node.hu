@@ -163,4 +163,11 @@ if ! [ -L /var/lib/cvmfs ]; then
 fi
 
 
+#--- ~usatlas1 (atlasgrid)
+
+if ! ls ~usatlas1 >/dev/null; then
+	echo "bad ~usatlas1" >&2
+	good=false
+fi
+
 $good || exit 1
