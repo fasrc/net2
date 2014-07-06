@@ -5,12 +5,9 @@ set -u
 state="$1"
 comment="$2"  #okay if empty
 
-#sites="
-#HU_ATLAS_Tier2
-#ANALY_HU_ATLAS_Tier2
-#HU_ATLAS_Tier2_MCORE
-#"
 sites="
+HU_ATLAS_Tier2
+ANALY_HU_ATLAS_Tier2
 HU_ATLAS_Tier2_MCORE
 "
 
