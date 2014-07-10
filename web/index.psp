@@ -74,16 +74,26 @@ for facility in facilities:
 		</tr>
 <%
 	for ce in facility.ces:
+		if ce.name=='net2.rc.fas.harvard.edu':
+			#begin indent
+%>
+		<tr>
+			<td colspan="3" style="text-align:left;">
+				<a href="http://status.rc.fas.harvard.edu/ganglia/holyoke_compute/?c=holyoke_compute_atlas_tier_2">ganglia compute cluster</a>
+				<a href="http://egg.bu.edu/net2/reporting%7btype:egg.Hatch%7d/plot_lsf_hourly%7btype:egg.Hatch%7d/LSF_over_time.html">LSF report from egg</a><br />
+			</td>
+		</tr>
+<%
 		#begin indent
 %>
-			<tr>
-				<td colspan="3" style="text-align:left;">
-					<h2><%= ce.name %></h2>
-					<a href="https://oim.grid.iu.edu/oim/resourceedit?id=<%= ce.oimid %>">OIM</a>
-					&nbsp;&nbsp;
-					RSV:<a href="http://<%= ce.name %>/rsv/">local</a>
-				</td>
-			</tr>
+		<tr>
+			<td colspan="3" style="text-align:left;">
+				<h2><%= ce.name %></h2>
+				<a href="https://oim.grid.iu.edu/oim/resourceedit?id=<%= ce.oimid %>">OIM</a>
+				&nbsp;&nbsp;
+				RSV:<a href="http://<%= ce.name %>/rsv/">local</a>
+			</td>
+		</tr>
 
 <%
 		for pandasite in ce.pandasites:
