@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -e
+set -u
+
+state="$1"
+comment="$2"  #okay if empty
+
+sites="
+HU_ATLAS_Tier2
+ANALY_HU_ATLAS_Tier2
+HU_ATLAS_Tier2_MCORE
+"
+
+#does not work on net2 vanilla osg 3: "curl: (35) SSL connect error"
+set +u
+source /n/atlasfs/atlascode/sw/ATLAS-Client/setup.sh
+set -u
+
+cmd=set$state
+comment=$(echo "$2" | sed 's/ /%20/g')
+
+for site in $sites; do
+	curl -k --cert /tmp/x509up_u$(id -u) "https://panda.cern.ch:25943/server/controller/query?tpmes=$cmd&queue=$site&moduser=JohnBrunelle&comment=$comment"
+done

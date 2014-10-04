@@ -50,8 +50,8 @@ set -u
 
 
 #time after which any files/dirs considered by this script are considered stale (as a find test)
-#EXPIRATION='-mtime +7'
-EXPIRATION='-mmin +1'
+EXPIRATION='-mtime +7'
+#EXPIRATION='-mmin +5'
 
 #osg/vdt/globus installation directory
 OSG_LOCATION=/opt/osg
@@ -87,34 +87,31 @@ test "$(uname)" = Darwin && xargsnrie='' || xargsnrie='-r'
 
 #===
 
-##should now do these instead, but this isn't setup for that yet
-#/var/lib/globus/gram_job_state
-#/var/lib/globus/globus-seg-lsf
 
-##--- grid monitor agent state and lock files
-#
-#dirs="$OSG_LOCATION/globus/tmp/gram_job_state"
-#
-#x="$OSG_LOCATION/globus/tmp/gram_job_state.stale"
-#test -d $x && dirs="$dirs $x"
-#
-#log "working on $dirs"
-#
-##if the lock file is old, remove it and the (probably newer) state file
-#find -H $dirs  -mindepth 1 -maxdepth 1 -type f    -name '*.lock' $EXPIRATION | while read lockfile; do
-#	statefile="$(basename "$lockfile" .lock)"
-#	$PREFIX rm -f "$statefile"
-#	$PREFIX rm -f "$lockfile"
-#done
-#
-#log "working on $dirs (second pass for consistency)"
-#
-##now find old state files that would've been missed by the above if for some reason the lock file was gone
-#find -H $dirs -mindepth 1 -maxdepth 1 -type f \! -name '*.lock' $EXPIRATION | while read statefile; do
-#	lockfile="${statefile}.lock"
-#	$PREFIX rm -f "$statefile"
-#	$PREFIX rm -f "$lockfile"
-#done
+#--- grid monitor agent state and lock files
+
+dirs="$OSG_LOCATION/globus/tmp/gram_job_state"
+
+x="$OSG_LOCATION/globus/tmp/gram_job_state.stale"
+test -d $x && dirs="$dirs $x"
+
+log "working on $dirs"
+
+#if the lock file is old, remove it and the (probably newer) state file
+find -H $dirs  -mindepth 1 -maxdepth 1 -type f    -name '*.lock' $EXPIRATION | while read lockfile; do
+	statefile="$(basename "$lockfile" .lock)"
+	$PREFIX rm -f "$statefile"
+	$PREFIX rm -f "$lockfile"
+done
+
+log "working on $dirs (second pass for consistency)"
+
+#now find old state files that would've been missed by the above if for some reason the lock file was gone
+find -H $dirs -mindepth 1 -maxdepth 1 -type f \! -name '*.lock' $EXPIRATION | while read statefile; do
+	lockfile="${statefile}.lock"
+	$PREFIX rm -f "$statefile"
+	$PREFIX rm -f "$lockfile"
+done
 
 
 for homedir in $HOME_DIRS; do

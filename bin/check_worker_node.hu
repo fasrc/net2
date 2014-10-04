@@ -21,8 +21,8 @@ DESCRIPTION
 		* checksum of rpm package listing
 
 OPTIONS
-	--no-rpm-checksum
-		Do not compare the checksum the rpm package listing to the expected value.
+	--rpm-checksum
+		Also compare the checksum the rpm package listing to the expected value, hardcoded within this script.
 
 	-h, --help
 		Print this help.
@@ -35,7 +35,7 @@ BUGS/TODO
 
 EXAMPLES
 	get the current set of good nodes:
-		$ pdsh -g lsf.atlas_all '/odyssey/rc_admin/sw/net2/bin/check_worker_node.hu --no-rpm-checksum &>/dev/null && hostname || true' 2>/dev/null | awk -F: '{print \$1}' | sort | tr '\\n' ' '
+		$ pdsh -g lsf.atlas_all '/odyssey/rc_admin/sw/net2/bin/check_worker_node.hu &>/dev/null && hostname || true' 2>/dev/null | awk -F: '{print \$1}' | sort | tr '\\n' ' '
 		but then remove any that are also in atlas_bad
 	
 	get the current set of issue nodes (to be fixed, or added to atlas_bad):
@@ -46,17 +46,17 @@ AUTHOR
 	All rights reserved.
 "
 
-no_rpm_checksum=false
+rpm_checksum=false
 
-args=$(getopt -n "$(basename "$0")" -l no-rpm-checksum,help -o h -- "$@")
+args=$(getopt -n "$(basename "$0")" -l rpm-checksum,help -o h -- "$@")
 if [ $? -ne 0 ]; then
 	exit 65  #(getopt will have written the error message)
 fi
 eval set -- "$args"
 while [ ! -z "$1" ]; do
 	case "$1" in
-		--no-rpm-checksum)
-			no_rpm_checksum=true
+		rpm-checksum)
+			rpm_checksum=true
 			;;
 
 		-h | --help)
@@ -97,7 +97,7 @@ fi
 
 #--- installed packages
 
-if ! $no_rpm_checksum; then
+if $rpm_checksum; then
 	#currently good (two hardware types end up with different)
 	#	#2013-08-30, brand new rebuild, 2.6.32-358.11.1.el6.x86_64, fully yum updated, puppet stable
 	#	3238802324952aaf1347c6a56bcf8d4b  #atlas5* (e.g. atlas5805)
@@ -142,7 +142,17 @@ fi
 
 #--- cvmfs
 
+##this takes too long -- oasis and wisc usually not cached
+#cat /etc/cvmfs/default.local | grep CVMFS_REPOSITORIES | awk -F= '{print $2}' | tr ',' '\n'
 if [ "$(ls /cvmfs/atlas.cern.ch 2>/dev/null)" != 'repo' ]; then
+	echo "bad cvmfs" >&2
+	good=false
+fi
+if [ "$(ls /cvmfs/atlas-condb.cern.ch 2>/dev/null)" != 'repo' ]; then
+	echo "bad cvmfs" >&2
+	good=false
+fi
+if [[ "$(ls /cvmfs/atlas-nightlies.cern.ch 2>/dev/null)" != local*repo ]]; then
 	echo "bad cvmfs" >&2
 	good=false
 fi
@@ -152,5 +162,12 @@ if ! [ -L /var/lib/cvmfs ]; then
 	good=false
 fi
 
+
+#--- ~usatlas1 (atlasgrid)
+
+if ! ls ~usatlas1 >/dev/null; then
+	echo "bad ~usatlas1" >&2
+	good=false
+fi
 
 $good || exit 1

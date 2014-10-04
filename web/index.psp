@@ -1,3 +1,54 @@
+<%
+class Facility(object):
+	def __init__(self, name, ces):
+		self.name = name
+		self.ces = ces
+
+class CE(object):
+	def __init__(self, name, batchtype, oimid, pandasites):
+		self.name = name
+		self.oimid = oimid
+		self.batchtype = batchtype
+		self.pandasites = pandasites
+
+class PandaSite(object):
+	def __init__(self, name):
+		self.name = name
+
+facilities = [
+	Facility(
+		'Harvard University',
+		[
+			CE(
+				'net2.rc.fas.harvard.edu',
+				'lsf',
+				591,
+				[
+					PandaSite('HU_ATLAS_Tier2'),
+					PandaSite('ANALY_HU_ATLAS_Tier2'),
+					PandaSite('HU_ATLAS_Tier2_MCORE'),
+				],
+			),
+		],
+	),
+	Facility(
+		'Boston University',
+		[
+			CE(
+				'atlas-net2.bu.edu',
+				'sge',
+				0,  #???
+				[
+					PandaSite('BU_ATLAS_Tier2_SL6'),
+					PandaSite('ANALY_BU_ATLAS_Tier2_SL6'),
+					PandaSite('BU_ATLAS_Tier2_MCORE'),
+				],
+			),
+		],
+	),
+]
+%>
+
 <html>
 <head>
 <title>NET2</title>
@@ -5,59 +56,85 @@
 <body>
 
 <center>
-<a href="http://panda.cern.ch/server/pandamon/query?dash=clouds#US">online/offline status</a>
+<h1>US ATLAS Northeast Tier 2</h1>
+<a href="http://panda.cern.ch/server/pandamon/query?dash=clouds#US">US online/offline status</a>
 <br />
 <a href="http://panda.cern.ch/server/pandamon/query?ui=user&name=John%20Brunelle">John&nbsp;Brunelle's&nbsp;jobs</a>
 <br />
 </center>
 
-<table style="margin-left:auto; margin-right:auto;">
-	<tr>
-		<td colspan="3" style="text-align:left;">
-			<span style="font-size:large;"><strong>Harvard University<br /></strong></span>
-		</td>
-	</tr>
-	<tr>
-		<td colspan="3" style="text-align:left;">
-			RSV:&nbsp;<a href="http://net2.rc.fas.harvard.edu/rsv/">local</a>
-		</td>
-	</tr>
+<%
+for facility in facilities:
+%>
+	<table style="margin-left:auto; margin-right:auto;">
+		<tr>
+			<td colspan="3" style="text-align:left;">
+				<h1><%= facility.name %></h1>
+			</td>
+		</tr>
+<%
+	for ce in facility.ces:
+		if ce.name=='net2.rc.fas.harvard.edu':
+			#begin indent
+%>
+		<tr>
+			<td colspan="3" style="text-align:left;">
+				<a href="http://status.rc.fas.harvard.edu/ganglia/holyoke_compute/?c=holyoke_compute_atlas_tier_2">ganglia compute cluster</a>
+				<a href="http://egg.bu.edu/net2/reporting%7btype:egg.Hatch%7d/plot_lsf_hourly%7btype:egg.Hatch%7d/LSF_over_time.html">LSF report from egg</a><br />
+			</td>
+		</tr>
+<%
+		#begin indent
+%>
+		<tr>
+			<td colspan="3" style="text-align:left;">
+				<h2><%= ce.name %></h2>
+				<a href="https://oim.grid.iu.edu/oim/resourceedit?id=<%= ce.oimid %>">OIM</a>
+				&nbsp;&nbsp;
+				RSV:<a href="http://<%= ce.name %>/rsv/">local</a>
+			</td>
+		</tr>
 
 <%
-for site in ('HU_ATLAS_Tier2', 'ANALY_HU_ATLAS_Tier2'):
-	#begin indent
+		for pandasite in ce.pandasites:
+			#begin indent
 %>
-	<tr>
-		<td colspan="3" style="text-align:left;">
-			<strong><%= site %><br /></strong>
-		</td>
-	</tr>
-	<tr>
-		<td>
-			<a href="http://panglia.triumf.ca/site/generator.php?SITE=<%= site %>"><img src="http://panglia.triumf.ca/site/graph.php?SITE=<%= site %>&TIME=day&SIZE=wide&STATE=ALL&GRTYPE=individual&SCALE=regular&VIEW=bysites" style="border:none;" /></a>
-		</td>
-		<td style="vertical-align:top;">
-			<!-- http://apfmon.lancs.ac.uk/query/<%= site %>/ -->
-			<a href="http://apfmon.lancs.ac.uk/q/404">APF</a><br />
-			jobs:&nbsp;<a href="http://panda.cern.ch/server/pandamon/query/?job=*&site=<%= site %>&hours=12">all</a><br />
-			jobs:&nbsp;<a href="http://panda.cern.ch/server/pandamon/query/?job=*&site=<%= site %>&hours=12&jobStatus=defined">defined</a><br />
-			jobs:&nbsp;<a href="http://panda.cern.ch/server/pandamon/query/?job=*&site=<%= site %>&hours=12&jobStatus=pending">pending</a><br />
-			jobs:&nbsp;<a href="http://panda.cern.ch/server/pandamon/query/?job=*&site=<%= site %>&hours=12&jobStatus=running">running</a><br />
-			jobs:&nbsp;<a href="http://panda.cern.ch/server/pandamon/query/?job=*&site=<%= site %>&hours=12&jobStatus=finished">finished</a><br />
-			jobs:&nbsp;<a href="http://panda.cern.ch/server/pandamon/query/?job=*&site=<%= site %>&hours=12&jobStatus=failed">failed</a><br />
-			jobs:&nbsp;<a href="http://panda.cern.ch/server/pandamon/query?tp=workers&queue=<%= site %>-lsf&hours=12">by worker node</a><br />
-		</td>
-		<td style="vertical-align:top;">
-			<a href="https://atlas-agis.cern.ch:2821/agis/panda_queue/detail/<%= site %>-lsf/full/">AGIS</a><br />
-			<!--<a href="http://panda.cern.ch/server/pandamon/query?tp=queue&id=<%= site %>-lsf">queue&nbsp;config</a><br />-->
-			<a href="https://atlas-install.roma1.infn.it/atlas_install/list.php?resource=<%= site %>">release&nbsp;validations</a></br>
-			<a href="http://panda.cern.ch/server/pandamon/query?mode=site&site=<%= site %>">HC&nbsp;queuecontrol</a><br />
-		</td>
-	</tr>
+			<tr>
+				<td colspan="3" style="text-align:left;">
+					&nbsp;<br />
+					<strong><%= pandasite.name %></strong><br />
+					<a href="https://atlas-agis.cern.ch/agis/panda_queue/detail/<%= pandasite.name %>-<%= ce.batchtype %>/full/">AGIS</a><br />
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<a href="http://panglia.triumf.ca/site/generator.php?SITE=<%= pandasite.name %>"><img src="http://panglia.triumf.ca/site/graph.php?SITE=<%= pandasite.name %>&TIME=day&SIZE=wide&STATE=ALL&GRTYPE=individual&SCALE=regular&VIEW=bysites" style="border:none;" /></a>
+				</td>
+				<td style="vertical-align:top;">
+					<!-- http://apfmon.lancs.ac.uk/query/<%= pandasite.name %>/ -->
+					<a href="http://apfmon.lancs.ac.uk/q/404">APF</a><br />
+					jobs:&nbsp;<a href="http://panda.cern.ch/server/pandamon/query/?job=*&site=<%= pandasite.name %>&hours=12">all</a><br />
+					jobs:&nbsp;<a href="http://panda.cern.ch/server/pandamon/query/?job=*&site=<%= pandasite.name %>&hours=12&jobStatus=defined">defined</a><br />
+					jobs:&nbsp;<a href="http://panda.cern.ch/server/pandamon/query/?job=*&site=<%= pandasite.name %>&hours=12&jobStatus=pending">pending</a><br />
+					jobs:&nbsp;<a href="http://panda.cern.ch/server/pandamon/query/?job=*&site=<%= pandasite.name %>&hours=12&jobStatus=running">running</a><br />
+					jobs:&nbsp;<a href="http://panda.cern.ch/server/pandamon/query/?job=*&site=<%= pandasite.name %>&hours=12&jobStatus=finished">finished</a><br />
+					jobs:&nbsp;<a href="http://panda.cern.ch/server/pandamon/query/?job=*&site=<%= pandasite.name %>&hours=12&jobStatus=failed">failed</a><br />
+					jobs:&nbsp;<a href="http://panda.cern.ch/server/pandamon/query?tp=workers&queue=<%= pandasite.name %>-<%= ce.batchtype %>&hours=12">by worker node</a><br />
+				</td>
+				<td style="vertical-align:top;">
+					<!--<a href="http://panda.cern.ch/server/pandamon/query?tp=queue&id=<%= pandasite.name %>-lsf">queue&nbsp;config</a><br />-->
+					<a href="https://atlas-install.roma1.infn.it/atlas_install/list.php?resource=<%= pandasite.name %>">release&nbsp;validations</a></br>
+					<a href="http://panda.cern.ch/server/pandamon/query?mode=site&site=<%= pandasite.name %>">HC&nbsp;queuecontrol</a><br />
+				</td>
+			</tr>
+<%
+		#end indent
+%>
+		</table>
+		<br />
+		<br />
 <%
 #end indent
 %>
-</table>
-
 </body>
 </html>
