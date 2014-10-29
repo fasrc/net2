@@ -109,6 +109,9 @@ http://gratiaweb.grid.iu.edu/gratia/bysite?facility=NET2|HU_ATLAS_Tier2|NET2_HU
 ##there is this, too, but I don't have the browser plugin and haven't investigated
 #http://gratia-osg-prod-reports.opensciencegrid.org/gratia-reporting/
 
+#look for missing data -- change the date in the URL
+http://gr13x6.fnal.gov:8319/gratia-apel/2013-12.missingdays.html
+
 
 #--- rsv
 
